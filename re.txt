@@ -1,0 +1,33 @@
+some examples of complex search queries: 
+
+* find any 1 km stretch (length) of mid-size river (wider than 5m, or with river depth above 3m) with significant descent gradient (i.e. above 5m / 1km)
+
+* find wide hill or elevated plain near body of water, the average elevation difference has to be at least 30m (height above water), the elevated area has to be of at least 0.5 ha, and its distance to this body of water has to be less than 2 km, the body of water has to be either significant lake (area size above 10ha) or significant river (wider than 10m) 
+
+* plot of land has to be at least 1ha (single owner) and has to be less than 100m from a forested area and less than 1km from body of water and less than 30km from a mid-size town with a hospital
+
+
+
+Here's an example SQL query that retrieves the region where the average elevation difference above 30 meters:
+
+
+WITH elevation_diff AS (
+  SELECT ST_HeightAboveSea(rast) - 30 AS diff, ST_Union(geom) AS geom
+  FROM your_raster_table, your_vector_table
+  WHERE ST_Intersects(rast, geom)
+  GROUP BY geom
+  HAVING AVG(ST_HeightAboveSea(rast)) >= 30
+)
+SELECT ST_AsGeoJSON(geom) AS region
+FROM elevation_diff;
+
+SELECT *
+FROM your_table
+WHERE ST_Distance(your_polygon, the_geom) < 22;
+
+SELECT geom
+FROM geom_table
+WHERE ST_DWithin( geom, 'SRID=312;POINT(100000 200000)', 100 )
+
+http://postgis.net/docs/using_postgis_query.html#qa_total_length_roads
+
