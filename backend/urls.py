@@ -25,4 +25,6 @@ urlpatterns = [
     # path("", views.front, name="front"),
     
     re_path(r'^api/complexSearch', views.complex_Search, name = 'complexSearch'),
+    re_path(r'^api/requestData', views.all_Search, name = 'all_Search'),
+    re_path(r'^api/requestPoint', views.point_Search, name = 'point_Search'),
 ]
