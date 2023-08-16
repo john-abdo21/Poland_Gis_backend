@@ -32,55 +32,53 @@ def complex_Search(request):
         data = request.data.get('data')
         r_length = data.get('R_Length')
         r_width = data.get('R_Width')
-        r_distance = data.get('R_Distance')
-        # filter_river_condition = {'dlug__gte': float(r_length),
-        #                     'r_width__gte': float(r_width) }
-        # riverfilter = PlRiver3857.objects.filter(**filter_river_condition)
-        # print(f"river_count: {riverfilter.count()}")
-        # geoata = serialize("geojson", riverfilter, geometry_field="geom", fields=["naz_rzeki"])
-        # sqlForRiver = '''
-        #     SELECT ST_AsGeoJSON(ST_Union(ST_Buffer(geom, %(buffer_distance)s))) AS merged_geojson
+        l_area = data.get('L_Area')
+        distance = data.get('R_Distance')
+# only river relation
+
+        # sqlForRegions = '''
+        #   SELECT
+        #     ST_AsGeoJSON(ST_Union(ST_Transform(pl_plot3857.geom, 3857)))
+        # FROM pl_plot3857
+        # INNER JOIN (
+        #     SELECT ST_Buffer(ST_Union(ST_Transform(geom, 3857)), 50) AS buffer_geom
         #     FROM pl_river3857
-        #     WHERE dlug >= %(r_length)s AND r_width >= %(r_width)s
+        #     WHERE dlug >= 100 AND r_width >= 20
+        # ) AS pl_river3857_buffer
+        # ON ST_Intersects(pl_plot3857.geom, pl_river3857_buffer.buffer_geom);
         # '''
-        # with connection.cursor() as cursor:
-        #     cursor.execute(sqlForRiver, {'buffer_distance': r_distance, 'r_length': r_length, 'r_width': r_width})
-        #     river_merged_geojson = cursor.fetchone()[0]
 
-        # river_geom = GEOSGeometry(river_merged_geojson)
-
+# river and lake
         sqlForRegions = '''
-          SELECT
-            ST_AsGeoJSON(ST_Union(ST_Transform(pl_plot3857.geom, 3857)))
-        FROM pl_plot3857
-        INNER JOIN (
-            SELECT ST_Buffer(ST_Union(ST_Transform(geom, 3857)), 50) AS buffer_geom
-            FROM pl_river3857
-            WHERE dlug >= 100 AND r_width >= 20
-        ) AS pl_river3857_buffer
-        ON ST_Intersects(pl_plot3857.geom, pl_river3857_buffer.buffer_geom);
-        '''
+                SELECT
+                    ST_AsGeoJSON(ST_Union(ST_Transform(pl_plot3857.geom, 3857)))
+                FROM
+                    pl_plot3857
+                INNER JOIN (
+                    SELECT ST_Buffer(
+                        ST_Union(
+                            ST_Transform(ST_Force2D(geom), 3857)
+                        ),
+                       %(distance)s
+                    ) AS buffer_geom
+                    FROM (
+                        SELECT geom
+                        FROM pl_river3857
+                        WHERE dlug >=  %(r_length)s AND r_width >= %(r_width)s
+                        UNION ALL
+                        SELECT shape
+                        FROM inlandwater
+                        WHERE area >=  %(l_area)s
+                    ) AS water_geom
+                ) AS water_buffer
+                ON ST_Intersects(pl_plot3857.geom, water_buffer.buffer_geom);
+            '''
         with connection.cursor() as cursor:
-            cursor.execute(sqlForRegions)
+            cursor.execute(sqlForRegions,{'distance': distance,'r_length': r_length,'r_width': r_width,'l_area': l_area})
             overlapping_regions = cursor.fetchall()
-
-        # landfilter = PlPlot3857.objects.filter(geom__dwithin=river_merged_geojson)
-        # geojson_data = serialize('geojson', landfilter)
         print('overlapping_regions')
-        features=[]
-        # for row in overlapping_regions:
-        #     feature={
-        #         "type": "Feature",
-        #         "geometry": row,
-        #     }
-        #     features.append(row)
-        # feature_collection = {
-        #     "type": "FeatureCollection",
-        #     "features": features
-        # }
-
-        # json_data = json.dumps({'landfilter':geojson_data})
         return Response(overlapping_regions)
+    
 # def complex_Search(request):
 #     if request.method == 'GET':
 #         print(request.data)
