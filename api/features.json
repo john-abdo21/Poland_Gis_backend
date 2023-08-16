@@ -1,0 +1,22 @@
+features
+: 
+Array(27)
+0
+: 
+geometry
+: 
+coordinates
+: 
+(8) [Array(500), Array(500), Array(500), Array(500), Array(500), Array(500), Array(500), Array(211)]
+type
+: 
+"MultiLineString"
+[[Prototype]]
+: 
+Object
+id
+: 
+68
+properties
+: 
+{naz_rzeki: 'Wis³oka'}
