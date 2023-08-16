@@ -35,7 +35,6 @@ def complex_Search(request):
         l_area = data.get('L_Area')
         distance = data.get('R_Distance')
 # only river relation
-
         # sqlForRegions = '''
         #   SELECT
         #     ST_AsGeoJSON(ST_Union(ST_Transform(pl_plot3857.geom, 3857)))
@@ -47,7 +46,6 @@ def complex_Search(request):
         # ) AS pl_river3857_buffer
         # ON ST_Intersects(pl_plot3857.geom, pl_river3857_buffer.buffer_geom);
         # '''
-
 # river and lake
         sqlForRegions = '''
                 SELECT
@@ -178,14 +176,23 @@ def all_Search(request):
         p_area_max = data.get('P_Area_max')
         json_data=[]
         if r_length:
-            filter_river_condition = {'dlug__gte': float(r_length)}
             if r_width:
-                filter_river_condition = {'dlug__gte': float(r_length),
-                                'r_width__gte': float(r_width) }
-            riverfilter = PlRiver3857.objects.filter(**filter_river_condition)
-            print(f"river_count: {riverfilter.count()}")
-            geoata = serialize("geojson", riverfilter, geometry_field="geom", fields=["naz_rzeki"])
-            json_data = json.dumps({'key':'R','val':geoata})
+                sqlForRiver = '''
+                        SELECT ST_AsGeoJSON(ST_Union(ST_Transform(geom, 3857))) AS merged_geojson FROM pl_river3857 WHERE dlug >= %(r_length)s and r_width >= %(r_width)s;
+                    '''
+                with connection.cursor() as cursor:
+                    cursor.execute(sqlForRiver, {'r_length': r_length,'r_width': r_width})
+                    riverfilter = cursor.fetchone()[0]
+                print("river_count1" )
+            else:
+                sqlForRiver = '''
+                        SELECT ST_AsGeoJSON(ST_Union(ST_Transform(geom, 3857))) AS merged_geojson FROM pl_river3857 WHERE dlug >= %(r_length)s;
+                    '''
+                with connection.cursor() as cursor:
+                    cursor.execute(sqlForRiver, {'r_length': r_length})
+                    riverfilter = cursor.fetchone()[0]
+                    print("river_count2" )
+            json_data = json.dumps({'key':'R','val':riverfilter})
         elif l_area_min:
             if l_area_max:
                 sqlForLake = '''
