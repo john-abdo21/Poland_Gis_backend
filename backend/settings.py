@@ -93,7 +93,7 @@ DATABASES = {
         'NAME': 'eu_postgis',
        'USER': 'postgres',
        'PASSWORD': 'root',
-       'HOST': '10.10.13.225',
+       'HOST': 'localhost',
        'PORT': '5432',
     },
 }
